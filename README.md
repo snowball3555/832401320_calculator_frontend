@@ -136,8 +136,8 @@ function toApiExpression(text) {
 
 ```powershell
 # 1) 启动后端（在 832401320_calculator_backend 目录下）
-cd C:\Users\15750\Documents\deepseek-harness\default-workspace\se-assignment1\832401320_calculator_backend
-$env:FRONTEND_DIR = "C:\Users\15750\Documents\deepseek-harness\default-workspace\se-assignment1\832401320_calculator_frontend"
+cd C:\path\to\832401320_calculator_backend
+$env:FRONTEND_DIR = "C:\path\to\832401320_calculator_frontend"
 python run.py
 ```
 
@@ -154,11 +154,11 @@ python run.py
 
 ```powershell
 # 终端 1：后端（不设置 FRONTEND_DIR）
-cd C:\Users\15750\Documents\deepseek-harness\default-workspace\se-assignment1\832401320_calculator_backend
+cd C:\path\to\832401320_calculator_backend
 python run.py
 
 # 终端 2：前端静态服务器
-cd C:\Users\15750\Documents\deepseek-harness\default-workspace\se-assignment1\832401320_calculator_frontend
+cd C:\path\to\832401320_calculator_frontend
 python -m http.server 8080
 ```
 
@@ -171,7 +171,7 @@ python -m http.server 8080
 双击 `index.html`，或在资源管理器中把文件拖进浏览器。
 
 ```text
-file:///C:/Users/15750/.../832401320_calculator_frontend/index.html
+file:///C:/path/to/832401320_calculator_frontend/index.html
 ```
 
 此方式可正常使用，但有以下受限点：
