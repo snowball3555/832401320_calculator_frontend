@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>前后端分离计算器 · Calculator</title>
+  <meta name="description" content="软件工程实践第一次作业：前后端分离计算器系统。所有计算均由后端 API 完成。" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%234f7cff'/%3E%3Cpath%20d='M9%2011h6M12%208v6M18%2011h6M9%2021h6M18%2018h6v6h-6z'%20stroke='white'%20stroke-width='2.2'%20stroke-linecap='round'%20fill='none'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- ============================ 顶部栏 ============================ -->
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__logo" aria-hidden="true">÷×</span>
+      <div>
+        <h1 class="topbar__title">前后端分离计算器</h1>
+        <p class="topbar__subtitle">前端只负责交互与展示 · 计算与存储全部由后端 API 完成</p>
+      </div>
+    </div>
+
+    <div class="topbar__actions">
+      <button type="button" class="chip" id="backend-status" title="点击重新检测后端连通性">
+        <span class="chip__dot" data-state="unknown"></span>
+        <span class="chip__text">检测后端中…</span>
+      </button>
+      <button type="button" class="icon-button" id="theme-toggle" title="切换深色 / 浅色主题">
+        <span id="theme-icon">🌙</span>
+        <span class="icon-button__label" id="theme-label">深色</span>
+      </button>
+      <button type="button" class="icon-button" id="open-api-docs" title="打开后端 Swagger 接口文档">
+        <span>📘</span><span class="icon-button__label">接口文档</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 后端离线提示条：停掉后端服务时，前端明确"无法得到新结果" -->
+  <div class="offline-banner" id="offline-banner" hidden>
+    <strong>后端服务未连接</strong>
+    <span>前端界面仍可继续输入，但<b>无法得到计算结果</b>——这正说明计算发生在后端。</span>
+    <code id="offline-hint">http://127.0.0.1:8000</code>
+  </div>
+
+  <main class="layout">
+    <!-- ======================= 左：计算器 ======================= -->
+    <section class="panel panel--calculator" aria-label="计算器">
+      <div class="panel__header">
+        <div class="tabs" role="tablist" aria-label="计算模式">
+          <button type="button" class="tab tab--active" role="tab" data-mode="standard" aria-selected="true">标准</button>
+          <button type="button" class="tab" role="tab" data-mode="scientific" aria-selected="false">科学</button>
+        </div>
+        <span class="panel__hint">乘除用 × ÷ 显示，发送给后端时转换为 * /</span>
+      </div>
+
+      <div class="display">
+        <label class="sr-only" for="expression-input">表达式</label>
+        <input
+          id="expression-input"
+          class="display__input"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="请输入算式，例如 (1+2)*3"
+          aria-describedby="result-meta"
+        />
+        <div class="display__result-row">
+          <output class="display__result" id="result-value" aria-live="polite">—</output>
+          <button type="button" class="ghost-button" id="btn-copy-result" title="复制结果">复制</button>
+        </div>
+        <p class="display__meta" id="result-meta">等待计算…</p>
+      </div>
+
+      <div class="message" id="message-area" role="status" aria-live="polite" hidden></div>
+
+      <!-- 科学计算附加键盘 -->
+      <div class="sci-keypad" id="sci-keypad" hidden>
+        <button type="button" class="key key--sci" data-insert="sin(">sin</button>
+        <button type="button" class="key key--sci" data-insert="cos(">cos</button>
+        <button type="button" class="key key--sci" data-insert="tan(">tan</button>
+        <button type="button" class="key key--sci" data-insert="pi">π</button>
+        <button type="button" class="key key--sci" data-insert="ln(">ln</button>
+        <button type="button" class="key key--sci" data-insert="log(">log</button>
+        <button type="button" class="key key--sci" data-insert="sqrt(">√</button>
+        <button type="button" class="key key--sci" data-insert="e">e</button>
+        <button type="button" class="key key--sci" data-insert="abs(">abs</button>
+        <button type="button" class="key key--sci" data-insert="round(">round</button>
+        <button type="button" class="key key--sci" data-insert="factorial(">n!</button>
+        <button type="button" class="key key--sci" data-insert="^2">x²</button>
+      </div>
+
+      <div class="keypad" id="keypad">
+        <button type="button" class="key key--func" data-action="clear">C</button>
+        <button type="button" class="key key--func" data-action="backspace">⌫</button>
+        <button type="button" class="key key--func" data-insert="(">(</button>
+        <button type="button" class="key key--func" data-insert=")">)</button>
+
+        <button type="button" class="key" data-insert="7">7</button>
+        <button type="button" class="key" data-insert="8">8</button>
+        <button type="button" class="key" data-insert="9">9</button>
+        <button type="button" class="key key--op" data-insert="÷">÷</button>
+
+        <button type="button" class="key" data-insert="4">4</button>
+        <button type="button" class="key" data-insert="5">5</button>
+        <button type="button" class="key" data-insert="6">6</button>
+        <button type="button" class="key key--op" data-insert="×">×</button>
+
+        <button type="button" class="key" data-insert="1">1</button>
+        <button type="button" class="key" data-insert="2">2</button>
+        <button type="button" class="key" data-insert="3">3</button>
+        <button type="button" class="key key--op" data-insert="-">−</button>
+
+        <button type="button" class="key key--func" data-action="negate">±</button>
+        <button type="button" class="key" data-insert="0">0</button>
+        <button type="button" class="key" data-insert=".">.</button>
+        <button type="button" class="key key--op" data-insert="+">+</button>
+
+        <button type="button" class="key key--func" data-insert="%">%</button>
+        <button type="button" class="key key--func" data-insert="^">^</button>
+        <button type="button" class="key key--func" data-insert="!">n!</button>
+        <button type="button" class="key key--func" data-insert="/100" title="把当前表达式除以 100">÷100</button>
+
+        <button type="button" class="key key--equals" id="btn-equals" data-action="calculate">= 计算</button>
+      </div>
+
+      <p class="panel__footer-note">
+        快捷键：数字 / <kbd>+</kbd> <kbd>-</kbd> <kbd>*</kbd> <kbd>/</kbd> <kbd>(</kbd> <kbd>)</kbd> <kbd>^</kbd>
+        <kbd>!</kbd> <kbd>%</kbd> · <kbd>Enter</kbd> 计算 · <kbd>Backspace</kbd> 退格 · <kbd>Esc</kbd> 清空
+      </p>
+    </section>
+
+    <!-- ======================= 右：历史记录 ======================= -->
+    <section class="panel panel--history" aria-label="计算历史">
+      <div class="panel__header">
+        <h2 class="panel__title">计算历史 <span class="badge" id="history-total">0</span></h2>
+        <div class="panel__tools">
+          <button type="button" class="ghost-button" id="btn-refresh-history" title="从后端重新拉取">刷新</button>
+          <button type="button" class="ghost-button ghost-button--danger" id="btn-clear-history" title="清空后端数据库中的历史">清空</button>
+        </div>
+      </div>
+
+      <div class="history-filters">
+        <input id="history-search" class="input" type="search" placeholder="搜索表达式或结果…" autocomplete="off" />
+        <label class="switch">
+          <input type="checkbox" id="history-fav-only" />
+          <span>只看收藏</span>
+        </label>
+      </div>
+
+      <div class="history-list" id="history-list">
+        <p class="empty-state">暂无历史记录，先算一道题吧 ~</p>
+      </div>
+
+      <div class="pagination">
+        <button type="button" class="ghost-button" id="history-prev">上一页</button>
+        <span class="pagination__info" id="history-page-info">第 1 / 1 页</span>
+        <button type="button" class="ghost-button" id="history-next">下一页</button>
+      </div>
+
+      <dl class="stats" id="stats">
+        <div><dt>累计计算</dt><dd id="stat-total">0</dd></div>
+        <div><dt>今日</dt><dd id="stat-today">0</dd></div>
+        <div><dt>收藏</dt><dd id="stat-fav">0</dd></div>
+        <div><dt>最常用运算符</dt><dd id="stat-top-op">—</dd></div>
+        <div class="stats__wide"><dt>最近一次计算</dt><dd id="stat-last">—</dd></div>
+      </dl>
+    </section>
+
+    <!-- ======================= 下：扩展功能 ======================= -->
+    <section class="panel panel--tools" aria-label="扩展功能">
+      <div class="panel__header">
+        <div class="tabs" role="tablist" aria-label="扩展工具">
+          <button type="button" class="tab tab--active" role="tab" data-tool="base" aria-selected="true">进制转换</button>
+          <button type="button" class="tab" role="tab" data-tool="unit" aria-selected="false">单位换算</button>
+          <button type="button" class="tab" role="tab" data-tool="parse" aria-selected="false">语法分析</button>
+          <button type="button" class="tab" role="tab" data-tool="functions" aria-selected="false">函数速查</button>
+        </div>
+      </div>
+
+      <!-- 进制转换 -->
+      <div class="tool" data-tool-panel="base">
+        <div class="tool__row">
+          <label class="field">
+            <span>数值</span>
+            <input id="base-value" class="input" type="text" value="255" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>源进制</span>
+            <select id="base-from" class="input"></select>
+          </label>
+          <label class="field">
+            <span>目标进制</span>
+            <select id="base-to" class="input"></select>
+          </label>
+          <button type="button" class="primary-button" id="btn-base-convert">转换</button>
+        </div>
+        <p class="tool__result" id="base-result">等待转换…</p>
+        <p class="tool__note" id="base-note"></p>
+      </div>
+
+      <!-- 单位换算 -->
+      <div class="tool" data-tool-panel="unit" hidden>
+        <div class="tool__row">
+          <label class="field">
+            <span>数值</span>
+            <input id="unit-value" class="input" type="number" value="1" step="any" />
+          </label>
+          <label class="field">
+            <span>类别</span>
+            <select id="unit-category" class="input"></select>
+          </label>
+          <label class="field">
+            <span>从</span>
+            <select id="unit-from" class="input"></select>
+          </label>
+          <label class="field">
+            <span>到</span>
+            <select id="unit-to" class="input"></select>
+          </label>
+          <button type="button" class="primary-button" id="btn-unit-convert">换算</button>
+        </div>
+        <p class="tool__result" id="unit-result">等待换算…</p>
+        <p class="tool__note" id="unit-formula"></p>
+      </div>
+
+      <!-- 语法分析 -->
+      <div class="tool" data-tool-panel="parse" hidden>
+        <div class="tool__row">
+          <label class="field field--grow">
+            <span>表达式</span>
+            <input id="parse-input" class="input" type="text" value="(1+2)*3" autocomplete="off" />
+          </label>
+          <button type="button" class="primary-button" id="btn-parse">解析</button>
+        </div>
+        <p class="tool__note" id="parse-summary">后端会把表达式切成 Token，再构造成语法树（AST）。</p>
+        <pre class="code-block" id="parse-output"></pre>
+      </div>
+
+      <!-- 函数速查（数据来自后端 /api/meta/functions） -->
+      <div class="tool" data-tool-panel="functions" hidden>
+        <p class="tool__note">
+          下面的清单由后端 <code>GET /api/meta/functions</code> 动态提供，前端不维护第二份函数表。
+        </p>
+        <div class="function-grid" id="function-reference"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>软件工程实践 · 第一次作业 · 前后端分离计算器系统</span>
+    <span id="footer-api">API: —</span>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/calculator.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/tools.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

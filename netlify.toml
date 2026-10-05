@@ -1,0 +1,34 @@
+# ============================================================================
+# Netlify 部署配置（静态站点，无需构建）
+#
+# 用法：把前端仓库推到 GitHub → Netlify 控制台 Add new site → Import an existing project
+#      → 构建命令留空，发布目录填 "."（仓库根目录就是站点根目录）
+#
+# 部署完成后，把线上前端地址写进后端环境变量 CORS_ORIGINS，
+# 并在 js/config.js 的 API_BASE_URL 里填后端地址（前后端不同源时必须填）。
+# ============================================================================
+[build]
+  publish = "."
+  command = ""
+
+# 静态资源缓存策略：HTML 不缓存，JS/CSS 短缓存，避免更新后仍读到旧脚本
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
+
+# 单页应用回退：任何未知路径都返回 index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

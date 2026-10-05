@@ -1,0 +1,24 @@
+# ===== 依赖与构建（本项目零依赖、零构建，保留以防将来引入）=====
+node_modules/
+dist/
+build/
+.cache/
+.parcel-cache/
+
+# ===== 环境变量 =====
+.env
+.env.*
+
+# ===== 编辑器与系统 =====
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ===== 日志与临时文件 =====
+*.log
+npm-debug.log*
+_smoke.py
+_debug.py
+_api_check.py
